@@ -1,0 +1,69 @@
+@startuml context
+
+  !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+  AddRelTag("async", $lineStyle = DashedLine())
+  SHOW_PERSON_PORTRAIT()
+
+  title "Codeflix: Full Cycle Practical Project"
+
+  Person(catalog_admin,"Catalog Admin","Manage catalog including video categories")
+  Person(subscriptions_admin,"Subscriptions Admin","Manage system subscribers and subscription plans")
+  Person(subscriber,"Subscriber","Subscribe to the platform to access the video catalog")
+  
+  System_Boundary(catalog_management, "Catalog Management") {
+    Container(catalog_admin_web,"Catalog Admin Web","React","Allows catalog admins to manage the video catalog")
+    Container(catalog_admin_api,"Catalog Admin API","Node.js","Manages the video catalog")
+    Container(catalog_admin_db,"Catalog Admin DB","MySQL","Stores catalog data")
+    
+    Rel(catalog_admin,catalog_admin_web,"Interacts with")
+    Rel(catalog_admin_web,catalog_admin_api,"Sends data to / Receives data from","HTTPS/JSON")
+    Rel(catalog_admin_api,catalog_admin_db,"Sends data to / Receives data from","TCP")
+    
+    Container(encoder_service,"Encoder Service","Go","Performs encoding of videos to mpeg-dash")
+    Container(raw_catalog_storage,"Raw Catalog Storage","GCP Bucket","Stores raw videos")
+    Container(encoded_catalog_storage,"Encoded Catalog Storage","GCP Bucket","Stores encoded videos")
+
+    Rel(catalog_admin_api,raw_catalog_storage,"Uploads raw video to","HTTPS")
+    Rel(encoder_service,raw_catalog_storage,"Downloads raw video from","HTTPS")
+    Rel(encoder_service,encoded_catalog_storage,"Uploads encoded video to","HTTPS")
+
+    Rel(catalog_admin_api,encoder_service,"Reports a new raw video to","RabbitMQ Queue videos.new",$tags = "async")
+    Rel(encoder_service,catalog_admin_api,"Receives raw video data from","RabbitMQ Queue videos.new",$tags = "async")
+    Rel(encoder_service,catalog_admin_api,"Reports a new encoded video to","RabbitMQ Queue videos.encoded",$tags = "async")
+    Rel(catalog_admin_api,encoder_service,"Receives encoded video data from","RabbitMQ Queue videos.encoded",$tags = "async")
+  }
+
+  System_Boundary(codeflix, "Codeflix") {
+    Container(codeflix_web,"Codeflix Web","React","Allows subscribers to search the catalog and play videos") 
+    Container(codeflix_catalog_api,"Codeflix Catalog API","Node.js","Provides catalog search and video playback")
+    Container(codeflix_catalog_db,"Codeflix Catalog DB","Elasticsearch","Stores Codeflix catalog data")
+
+    Rel(subscriber,codeflix_web,"Interacts with")
+    Rel(codeflix_web,codeflix_catalog_api,"Sends data to / Receives data from","HTTPS/JSON")
+    Rel(codeflix_catalog_api,codeflix_catalog_db,"Sends data to / Receives data from","HTTPS/JSON")
+
+    Container(codeflix_catalog_sync_service,"Codeflix Catalog Sync Service","Kafka Connect","Syncs Codeflix catalog data")
+    Container(codeflix_catalog_message_broker,"Codeflix Catalog Message Broker","Apache Kafka","Stores and serves data provided by the catalog sync service")
+
+    Rel(codeflix_catalog_sync_service,catalog_admin_db,"Requests catalog data from","Debezium MySQL",$tags = "async")
+    Rel(codeflix_catalog_sync_service,codeflix_catalog_db,"Sends catalog data to","Sink Elasticsearch",$tags = "async")
+    Rel(codeflix_catalog_sync_service,codeflix_catalog_message_broker,"Interacts with","Kafka Protocol",$tags = "async")
+  }
+
+  System_Boundary(subscription_management, "Subscription Management") {
+    Container(subscription_management_api,"Subscription Management API","Node.js","Manages subscriptions")
+    Container(subscription_management_db,"Subscription Management DB","PostgreSQL","Stores subscriber and plan data")
+
+    Rel(subscriptions_admin,subscription_management_api,"Interacts with","HTTPS")
+    Rel(subscription_management_api,subscription_management_db,"Sends data to / Receives data from","PostgreSQL Protocol")
+    Rel(codeflix_web,subscription_management_api,"Sends data to / Receives data from","HTTPS")
+  }
+  
+  System_Boundary(authentication, "Authentication") {
+    Container(auth_service,"Auth Service","Keycloak","Authenticates all system users")
+    Rel(subscription_management_api,auth_service,"Authenticates from","HTTPS")
+    Rel(codeflix_web,auth_service,"Authenticates from","HTTPS")
+    Rel(catalog_admin_web,auth_service,"Authenticates from","HTTPS")
+  }
+
+@enduml
