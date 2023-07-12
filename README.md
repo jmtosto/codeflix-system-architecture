@@ -1,6 +1,6 @@
 # Codeflix: Video Streaming System Architecture
 
-This repository showcases the software architecture diagram for a video streaming system called Codeflix. The architecture diagram provides an overview of the system's components and their interactions, helping to understand the system's structure and flow of data.
+This repository showcases the software architecture diagram for a microservices-based video streaming system called Codeflix. The architecture diagram provides an overview of the system's components and their interactions, helping to understand the system's structure and flow of data.
 
 ## Architecture Diagram
 
