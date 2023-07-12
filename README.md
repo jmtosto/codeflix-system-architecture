@@ -40,7 +40,7 @@ The Authentication component provides authentication functionality for all syste
 
 ## Usage
 
-To view the architecture diagram, please refer to the [diagram.png](diagram.png) file in this repository.
+To view the architecture diagram, please refer to the [codeflix-system-architecture]([diagram.png](https://github.com/jmtosto/codeflix-system-architecture/assets/48574634/b425195c-2351-4c85-a9de-dde54197cd11)) file in this repository.
 
 You can use the diagram to gain a high-level understanding of the Codeflix video streaming system's architecture, including its components and their interactions.
 
